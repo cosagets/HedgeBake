@@ -1,0 +1,12 @@
+schema_version = "1.0.0"
+id = "hedgebake"
+version = "1.0.0"
+name = "HedgeBake"
+tagline = "A Blender addon that bakes GI maps for Hedgehog Engine 1 games using Cycles."
+maintainer = "cosagets"
+type = "add-on"
+tags = ["Render"]
+blender_version_min = "4.5.0"
+license = [
+"SPDX:GPL-2.0-or-later",
+]
