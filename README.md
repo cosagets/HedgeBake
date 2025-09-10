@@ -47,3 +47,5 @@ The messages created by the addon are meant to prevent this from happening. So i
 ![5](https://github.com/user-attachments/assets/80f68932-af61-4ee4-ba35-63b5fc526ebe)
 
 Also remember that any object that has the camera icon next to it will be visible in bakes. So, for example, if you keep your stage collision in the same Blender scene as your terrain, you'll want to disable it as a renderable object or bakes will look wrong.
+
+Finally, I've include two python scripts called Bakemaps.py and Error_Checking.py. These are the standalone, script only versions of the code for those who are interested.
