@@ -10,7 +10,7 @@ Click on the down arrow and select '**Install from Disk**'
 Navigate to the .zip file and click '**Install from Disk**'
 
 ![1](https://github.com/user-attachments/assets/43e36016-074c-4e77-b0d1-76169f60d01a)
-![2](https://github.com/user-attachments/assets/e4e870a9-bd6c-48ec-8153-6ebf9284f7f0)
+![2](https://github.com/user-attachments/assets/95bcd85d-e48e-4c25-971f-0d8011b152c6)
 
 ## How to use
 
