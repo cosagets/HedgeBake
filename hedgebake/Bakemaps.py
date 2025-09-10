@@ -348,7 +348,7 @@ for obj in selected_objects:
     rename_objects(obj)
     if skip_existing_files == True:
         if os.path.exists(path + obj.name + "_lightmap.png"):
-            print(f"Lightmap texture already exists. Skipping...")
+            # noprint(f"Lightmap texture already exists. Skipping...")
             restore_names(obj)
             select_first_uv_channel(obj)
             continue
@@ -386,7 +386,7 @@ for obj in selected_objects:
     rename_objects(obj)
     if skip_existing_files == True:
         if os.path.exists(path + obj.name + "_shadowmap.png"):
-            print(f"Shadowmap texture already exists. Skipping...")
+            # noprint(f"Shadowmap texture already exists. Skipping...")
             restore_names(obj)
             select_first_uv_channel(obj)
             continue
@@ -419,5 +419,6 @@ for obj in selected_objects:
     
 end_time = time.perf_counter()
 elapsed_time = end_time - start_time
+
 
 print(f"\nFinished in {timer(elapsed_time)}")
