@@ -16,7 +16,7 @@ bl_info = {
     "author" : "cosagets", 
     "description" : "A Blender addon that bakes GI maps for Hedgehog Engine 1 games using Cycles.",
     "blender" : (4, 5, 0),
-    "version" : (1, 0, 0),
+    "version" : (1, 0, 1),
     "location" : "",
     "warning" : "",
     "doc_url": "", 
@@ -34,9 +34,9 @@ import os
 
 addon_keymaps = {}
 _icons = None
-class SNA_PT_DIRECTORIES_C8FFC(bpy.types.Panel):
+class SNA_PT_DIRECTORIES_D7D3B(bpy.types.Panel):
     bl_label = 'Directories'
-    bl_idname = 'SNA_PT_DIRECTORIES_C8FFC'
+    bl_idname = 'SNA_PT_DIRECTORIES_D7D3B'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_context = ''
@@ -82,9 +82,9 @@ class SNA_PT_DIRECTORIES_C8FFC(bpy.types.Panel):
         layout.prop(bpy.context.scene, 'sna_render_list_file', text='', icon_value=0, emboss=True)
 
 
-class SNA_PT_BAKE_OPTIONS_05466(bpy.types.Panel):
+class SNA_PT_BAKE_OPTIONS_06FBA(bpy.types.Panel):
     bl_label = 'Bake Options'
-    bl_idname = 'SNA_PT_BAKE_OPTIONS_05466'
+    bl_idname = 'SNA_PT_BAKE_OPTIONS_06FBA'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_context = ''
@@ -128,9 +128,9 @@ class SNA_PT_BAKE_OPTIONS_05466(bpy.types.Panel):
         row_CC62E.prop(bpy.context.scene, 'sna_skip_existing_files', text='Skip Existing Files', icon_value=0, emboss=True)
 
 
-class SNA_PT_BAKE_D206F(bpy.types.Panel):
+class SNA_PT_BAKE_C73FF(bpy.types.Panel):
     bl_label = 'Bake'
-    bl_idname = 'SNA_PT_BAKE_D206F'
+    bl_idname = 'SNA_PT_BAKE_C73FF'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_context = ''
@@ -399,6 +399,7 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
             }
             original_visibility = {}
             original_metallic = {}
+            original_emission = {}
             original_names = {}
 
             def timer(seconds):
@@ -614,7 +615,7 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
             def remove_temporary_collection():
                 # noprint("Removing temporary collection...\n")
                 bpy.data.collections.remove(temporary_collection)
-            # Set Sun strength to 12, background strength to 0, and total scene light bounces to 0
+            # Set Sun strength to 12, and background strength, emission strength, and total scene light bounces to 0
 
             def change_light_setup():
                 # noprint("Changing light setup...\n")
@@ -631,6 +632,12 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
                         else:
                             original_visibility[obj.name] = obj.hide_render # Stores the current visibility of the light
                             obj.hide_render = True
+                # Sets all emission values to 0
+                for material in bpy.data.materials:
+                    for node in material.node_tree.nodes:
+                        if node.type == 'BSDF_PRINCIPLED':
+                            original_emission[node] = node.inputs['Emission Strength'].default_value
+                            node.inputs['Emission Strength'].default_value = 0
             # Bakes shadowmaps using direct bake type and saves them
 
             def bake_shadowmaps(obj, bakemap, savefile):
@@ -642,7 +649,7 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
                 if savefile == True:
                     bakemap.filepath_raw = path + obj.name + "_shadowmap.png"
                     bakemap.save()
-            # Restores original scene setup
+            # Restores original light setup
 
             def restore_light_setup():
                 # noprint("Restoring light setup...")
@@ -660,6 +667,11 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
                 # Enable all lights that were disabled by the script
                 for obj, visibility_state in original_visibility.items():
                     bpy.context.scene.objects[obj].hide_render = visibility_state
+                # Restores emission values
+                for material in bpy.data.materials:
+                    for node in material.node_tree.nodes:
+                        if node.type == 'BSDF_PRINCIPLED':
+                            node.inputs['Emission Strength'].default_value = original_emission[node]
             # Restore compositor and render settings
 
             def restore_other_settings():
@@ -696,7 +708,7 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
                 rename_objects(obj)
                 if skip_existing_files == True:
                     if os.path.exists(path + obj.name + "_lightmap.png"):
-                        print(f"Lightmap texture already exists. Skipping...")
+                        # noprint(f"Lightmap texture already exists. Skipping...")
                         restore_names(obj)
                         select_first_uv_channel(obj)
                         continue
@@ -732,7 +744,7 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
                 rename_objects(obj)
                 if skip_existing_files == True:
                     if os.path.exists(path + obj.name + "_shadowmap.png"):
-                        print(f"Shadowmap texture already exists. Skipping...")
+                        # noprint(f"Shadowmap texture already exists. Skipping...")
                         restore_names(obj)
                         select_first_uv_channel(obj)
                         continue
@@ -808,9 +820,9 @@ def register():
     bpy.types.Scene.sna_denoised_directory = bpy.props.StringProperty(name='Denoised Directory', description='', default='', subtype='DIR_PATH', maxlen=0)
     bpy.types.Scene.sna_render_list_file = bpy.props.StringProperty(name='Render List File', description='', default='', subtype='FILE_PATH', maxlen=0)
     bpy.types.Scene.sna_skip_existing_files = bpy.props.BoolProperty(name='Skip Existing Files', description='', default=True)
-    bpy.utils.register_class(SNA_PT_DIRECTORIES_C8FFC)
-    bpy.utils.register_class(SNA_PT_BAKE_OPTIONS_05466)
-    bpy.utils.register_class(SNA_PT_BAKE_D206F)
+    bpy.utils.register_class(SNA_PT_DIRECTORIES_D7D3B)
+    bpy.utils.register_class(SNA_PT_BAKE_OPTIONS_06FBA)
+    bpy.utils.register_class(SNA_PT_BAKE_C73FF)
     bpy.utils.register_class(SNA_OT_Bake_44E3C)
     bpy.utils.register_class(SNA_OT_Open_File_C5Afb)
 
@@ -830,8 +842,8 @@ def unregister():
     del bpy.types.Scene.sna_denoise
     del bpy.types.Scene.sna_use_render_list
     del bpy.types.Scene.sna_resolution
-    bpy.utils.unregister_class(SNA_PT_DIRECTORIES_C8FFC)
-    bpy.utils.unregister_class(SNA_PT_BAKE_OPTIONS_05466)
-    bpy.utils.unregister_class(SNA_PT_BAKE_D206F)
+    bpy.utils.unregister_class(SNA_PT_DIRECTORIES_D7D3B)
+    bpy.utils.unregister_class(SNA_PT_BAKE_OPTIONS_06FBA)
+    bpy.utils.unregister_class(SNA_PT_BAKE_C73FF)
     bpy.utils.unregister_class(SNA_OT_Bake_44E3C)
     bpy.utils.unregister_class(SNA_OT_Open_File_C5Afb)
