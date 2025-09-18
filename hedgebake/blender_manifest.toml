@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "hedgebake"
-version = "1.0.0"
+version = "1.0.1"
 name = "HedgeBake"
 tagline = "A Blender addon that bakes GI maps for Hedgehog Engine 1 games using Cycles."
 maintainer = "cosagets"
