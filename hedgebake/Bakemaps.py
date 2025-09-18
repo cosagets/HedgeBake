@@ -10,8 +10,8 @@ os.system('cls')
 start_time = time.perf_counter()
 
 selected_objects = bpy.context.selected_objects
-path = "C:/Users/Username/Desktop/BakeFolder/"
-render_list = "C:/Users/Username/Desktop/BakeFolder/Render List.txt"
+path = "C:/Users/Colin/Desktop/Sega/SGModding/Projects/Test2/HedgeBake/"
+render_list = "C:/Users/Colin/Desktop/Sega/SGModding/Projects/Test2/Render List.txt"
 use_render_list = True
 use_denoise = True
 bake_resolution = 1024
@@ -39,6 +39,7 @@ original_settings = {
 }
 original_visibility = {}
 original_metallic = {}
+original_emission = {}
 original_names = {}
 
 
@@ -264,7 +265,7 @@ def remove_temporary_collection():
     # noprint("Removing temporary collection...\n")
     bpy.data.collections.remove(temporary_collection)
 
-# Set Sun strength to 12, background strength to 0, and total scene light bounces to 0
+# Set Sun strength to 12, and background strength, emission strength, and total scene light bounces to 0
 def change_light_setup():
     # noprint("Changing light setup...\n")
     sunlight.color = 1.0, 1.0, 1.0
@@ -280,6 +281,13 @@ def change_light_setup():
             else:
                 original_visibility[obj.name] = obj.hide_render # Stores the current visibility of the light
                 obj.hide_render = True
+    
+    # Sets all emission values to 0
+    for material in bpy.data.materials:
+        for node in material.node_tree.nodes:
+            if node.type == 'BSDF_PRINCIPLED':
+                original_emission[node] = node.inputs['Emission Strength'].default_value
+                node.inputs['Emission Strength'].default_value = 0
 
 # Bakes shadowmaps using direct bake type and saves them
 def bake_shadowmaps(obj, bakemap, savefile):
@@ -292,7 +300,7 @@ def bake_shadowmaps(obj, bakemap, savefile):
         bakemap.filepath_raw = path + obj.name + "_shadowmap.png"
         bakemap.save()
 
-# Restores original scene setup
+# Restores original light setup
 def restore_light_setup():
     # noprint("Restoring light setup...")
     # Set sun strength, background strength, and total light bounces back to their previous values
@@ -310,6 +318,12 @@ def restore_light_setup():
     # Enable all lights that were disabled by the script
     for obj, visibility_state in original_visibility.items():
         bpy.context.scene.objects[obj].hide_render = visibility_state
+        
+    # Restores emission values
+    for material in bpy.data.materials:
+        for node in material.node_tree.nodes:
+            if node.type == 'BSDF_PRINCIPLED':
+                node.inputs['Emission Strength'].default_value = original_emission[node]
     
 # Restore compositor and render settings
 def restore_other_settings():
@@ -419,6 +433,5 @@ for obj in selected_objects:
     
 end_time = time.perf_counter()
 elapsed_time = end_time - start_time
-
 
 print(f"\nFinished in {timer(elapsed_time)}")
