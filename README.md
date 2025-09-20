@@ -34,6 +34,8 @@ Click '**Bake**' to begin the baking process. You can monitor its progress by op
 
 If there's an issue preventing you from baking, you'll receive a message created by the addon letting you know what the issue is.
 
+To actually bring the GI maps into the game, you'll need to first use the GIAtlas Converter from [libgens-sonicglvl](https://github.com/DarioSamo/libgens-sonicglvl) on your stage. Then, you'll need to open [HedgeGI](https://github.com/blueskythlikesclouds/HedgeGI), open your stage, set the Output Directory path to the location where your files are stored, set it to Global Illumination mode, and select '**Pack**'. DO NOT SELECT '**Bake**' or '**Bake and Pack**' because you may overwrite your files if '**Skip Existing Files**' isn't checked.
+
 ## Important notes
 
 This addon makes various changes to the blender scene when its running and reverts those changes when done. If it runs into an error, those changes won't be revert back.
