@@ -1,5 +1,7 @@
 # HedgeBake
 A Blender addon that bakes GI maps for Hedgehog Engine 1 games using Cycles.
+
+Current version requires **Blender 5.0** minimum.
 ## How to install
 Download the .zip file from the releases page
 
