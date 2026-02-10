@@ -2,8 +2,8 @@ import bpy
 import os
 
 os.system('cls')
-path = "C:/Users/Username/Desktop/BakeFolder/"
-render_list = "C:/Users/Username/Desktop/BakeFolder/RenderList.txt"
+path = "C:/Users/Colin/Desktop/Sega/Modding/Projects/Render Test/GITextures/"
+render_list = "C:/Users/Colin/Desktop/Sega/Modding/Projects/Render Test/RenderList.txt"
 use_render_list = True
 use_denoise = True
 selected_objects = bpy.context.selected_objects
@@ -34,11 +34,6 @@ def check_for_compositor_nodes():
         pass
     else:
         issues_found.append("Enable the 'Use Nodes' option in the compositor")
-
-# Check what the current frame is
-def check_current_frame():
-    if bpy.context.scene.frame_current != 1:
-        issues_found.append(f"Current frame number needs to be set to 1. It is currently {bpy.context.scene.frame_current}")
         
 # Check if there's a sun light in the scene
 def check_for_sunlight():
@@ -186,7 +181,6 @@ def ShowMessageBox(title = "Issues Found", icon = 'ERROR', message=""):
 check_path()
 check_for_cycles()
 check_for_compositor_nodes()
-check_current_frame()
 check_for_sunlight()
 check_light_linking()
 check_for_background_node()
