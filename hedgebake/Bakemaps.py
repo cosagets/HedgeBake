@@ -10,15 +10,15 @@ os.system('cls')
 start_time = time.perf_counter()
 
 selected_objects = bpy.context.selected_objects
-path = "C:/Users/Colin/Desktop/Sega/SGModding/Projects/Test2/HedgeBake/"
-render_list = "C:/Users/Colin/Desktop/Sega/SGModding/Projects/Test2/Render List.txt"
+path = "C:/Users/Colin/Desktop/Sega/Modding/Projects/Render Test/GITextures/"
+render_list = "C:/Users/Colin/Desktop/Sega/Modding/Projects/Render Test/RenderList.txt"
 use_render_list = True
 use_denoise = True
 bake_resolution = 1024
 skip_existing_files = False
 background_node = bpy.data.worlds["World"].node_tree.nodes["Background"]
 background_color = bpy.context.scene.world.color
-compositor = bpy.context.scene.node_tree
+compositor = bpy.context.scene.compositing_node_group
 sunlight = bpy.data.lights["Sun"]
 temp_path = bpy.app.tempdir
 original_settings = {
@@ -59,7 +59,6 @@ def update_progress(job_title, progress):
 # Create a bakemap image node in every material at the specified resolution
 # Disables all normals and sets metallic values to 0
 def create_bakemap(bake_resolution):
-    # noprint("Creating bakemap and bakemap image nodes...")
     bakemap = bpy.data.images.new("bakemap", int(bake_resolution), int(bake_resolution))
     
     for material in bpy.data.materials:
@@ -80,7 +79,6 @@ def create_bakemap(bake_resolution):
 
 # Set up and store compositor and render settings for denoising
 def change_other_settings():
-    # noprint("Changing other settings...")
     bpy.context.scene.view_settings.view_transform = 'Standard'
     bpy.context.scene.render.resolution_percentage = 1
     bpy.context.scene.render.bake.margin = 512
@@ -88,14 +86,12 @@ def change_other_settings():
     
 # Creates temporary collection
 def create_temporary_collection():
-    # noprint("Creating temporary collection...\n")
     global temporary_collection
     temporary_collection = bpy.data.collections.new(name="TempCollection")
     bpy.context.scene.collection.children.link(temporary_collection)
 
 # Selects the second UV Channel of the selected objects
 def select_second_uv_channel(obj):
-    # noprint("Selecting second uv channel...")
     obj.data.uv_layers.active_index = 1
 
 # Renames objects to match name changes that happen when using Hedgehog Converter
@@ -113,14 +109,12 @@ def rename_objects(obj):
             new_name = name_parts[0]
             
         original_names[new_name] = obj.name # Stores original name with new name as key
-        # noprint(f"Renaming {original_name} to {new_name}")
         obj.name = new_name
 
 # Moves object into temporary collection
 # With light linking, this will remove the direct sun light from bakes
 # while maintaining its indirect light contributions
 def move_to_temporary_collection(obj):
-    # noprint("Moving to temporary collection...")
     temporary_collection.objects.link(obj)
     currentCollection[0].objects.unlink(obj)
 
@@ -129,7 +123,6 @@ def bake_lightmaps(obj, bakemap, savefile):
     bpy.ops.object.select_all(action='DESELECT')
     obj.select_set(True)
     bakemap.file_format = 'PNG'
-    # noprint("Baking lightmaps...")
     bpy.ops.object.bake(type='DIFFUSE', pass_filter={'DIRECT','INDIRECT'})
     if savefile == True:
         bakemap.filepath_raw = path + obj.name + "_lightmap.png"
@@ -137,7 +130,6 @@ def bake_lightmaps(obj, bakemap, savefile):
     
 # Moves object back to its original collection
 def move_to_original_collection(obj):
-    # noprint("Moving to back to original collection...")
     currentCollection[0].objects.link(obj)
     temporary_collection.objects.unlink(obj)
 
@@ -145,12 +137,13 @@ def move_to_original_collection(obj):
 # Hedgehog Engine games multiply GI maps with themselves when in-game, making them darker
 # Saving the square root of the image's RGB values counteracts the darkening
 def sqrt_and_save(obj, current_map):
-    # noprint("Processing images and saving...")
     image_node = compositor.nodes.new(type='CompositorNodeImage')
     image_node.image = bpy.data.images.get("bakemap")
     file_output_node = compositor.nodes.new('CompositorNodeOutputFile')
-    file_output_node.base_path = path
-    file_output_node.file_slots[0].path = obj.name + current_map
+    file_output_node.directory = path
+    file_output_node.format.media_type = 'IMAGE'
+    file_output_node.file_output_items.new(socket_type='RGBA', name="Image")
+    file_output_node.file_name = obj.name + current_map
     separate_color_node = compositor.nodes.new(type='CompositorNodeSeparateColor')
     math_nodeR = compositor.nodes.new(type='ShaderNodeMath')
     math_nodeR.operation = 'SQRT'
@@ -169,28 +162,25 @@ def sqrt_and_save(obj, current_map):
     compositor.links.new(combine_color_node.outputs["Image"], file_output_node.inputs["Image"])
     bpy.ops.render.render(write_still=True)
     
-# Removes the .png0001 suffix placed on output files by default
+# Removes the .pngImage suffix placed on output files by default
 def rename_saved_files(obj, current_map):
-    # Sets the current frame to 1 so the .png0001 suffix can be placed by Blender and replaced by the script
+    # Sets the current frame to 1 so the .pngImage suffix can be placed by Blender and replaced by the script
     bpy.context.scene.frame_current = 1
     
-    old_filepath = os.path.join(path + obj.name + current_map + ".png0001.png")
-    filename = os.path.join(obj.name + current_map + ".png0001.png")
+    old_filepath = os.path.join(path + obj.name + current_map + ".pngImage.png")
+    filename = os.path.join(obj.name + current_map + ".pngImage.png")
     
     if os.path.isfile(old_filepath): # Checks if it's a file and not a subdirectory
-        new_filename = filename.replace(".png0001", "")
+        new_filename = filename.replace(".pngImage", "")
         new_filepath = os.path.join(path, new_filename)
         try:
             os.rename(old_filepath, new_filepath)
         except FileExistsError:
-            # noprint(f"{new_filename} already exists. Deleting...")
             os.remove(new_filepath)
             os.rename(old_filepath, new_filepath)
-            # noprint(f"Renamed '{filename}' to '{new_filename}'")
     
 # Remove compositor nodes created by the script
 def remove_compositor_nodes():
-    # noprint("Removing compositor nodes...")
     for node in compositor.nodes:
         if node.type != 'R_LAYERS' and node.type != 'COMPOSITE' and node.type != 'REROUTE' and node.type != 'VIEWER':
             compositor.nodes.remove(node)
@@ -198,12 +188,10 @@ def remove_compositor_nodes():
 # Restores object names
 def restore_names(obj):
     if obj.name in original_names:
-        # noprint(f"Renaming {obj.name} back to {original_names[obj.name]}")
         obj.name = original_names[obj.name]
 
 # Selects the first uv channel
 def select_first_uv_channel(obj):
-    # noprint("Selecting first UV Channel...\n")
     obj.data.uv_layers.active_index = 0
 
 # Gets a bake resolution from the render list file if available
@@ -220,22 +208,21 @@ def get_renderlist_resolution(obj, default_resolution):
     for i in range(len(data_rows)):
         if data_rows[i][1] == obj.name:
             bake_resolution = data_rows[i][0]
-            # noprint(f"Bake resolution for {obj.name} is {bake_resolution}")
             return int(bake_resolution)
-    # noprint(f"{obj.name} not found in render list. Using default resolution of {default_resolution}")
     return int(default_resolution)
     
 # Sets up the compositor nodes for denoising and saving the
 # square root of the image's RGB values
 def sqrt_denoise_and_save(obj, current_map):
-    # noprint("Processing images and saving...")
     image_node = compositor.nodes.new(type='CompositorNodeImage')
     image_node.image = bpy.data.images.get("bakemap")
     file_output_node = compositor.nodes.new('CompositorNodeOutputFile')
-    file_output_node.base_path = path
-    file_output_node.file_slots[0].path = obj.name + current_map
+    file_output_node.directory = path
+    file_output_node.format.media_type = 'IMAGE'
+    file_output_node.file_output_items.new(socket_type='RGBA', name="Image")
+    file_output_node.file_name = obj.name + current_map
     denoise_node = compositor.nodes.new(type='CompositorNodeDenoise')
-    denoise_node.use_hdr = False
+    denoise_node.inputs["HDR"].default_value = False
     if current_map == "_shadowmap.png":
         compositor.links.new(image_node.outputs["Image"], denoise_node.inputs["Image"])
         compositor.links.new(denoise_node.outputs["Image"], file_output_node.inputs["Image"])
@@ -262,12 +249,10 @@ def sqrt_denoise_and_save(obj, current_map):
     
 # Removes temporary collection.
 def remove_temporary_collection():
-    # noprint("Removing temporary collection...\n")
     bpy.data.collections.remove(temporary_collection)
 
 # Set Sun strength to 12, and background strength, emission strength, and total scene light bounces to 0
 def change_light_setup():
-    # noprint("Changing light setup...\n")
     sunlight.color = 1.0, 1.0, 1.0
     sunlight.energy = 5
     sunlight.exposure = 0
@@ -294,7 +279,6 @@ def bake_shadowmaps(obj, bakemap, savefile):
     bpy.ops.object.select_all(action='DESELECT')
     obj.select_set(True)
     bakemap.file_format = 'PNG'
-    # noprint("Baking shadowmaps...")
     bpy.ops.object.bake(type='DIFFUSE', pass_filter={'DIRECT'})
     if savefile == True:
         bakemap.filepath_raw = path + obj.name + "_shadowmap.png"
@@ -302,7 +286,6 @@ def bake_shadowmaps(obj, bakemap, savefile):
 
 # Restores original light setup
 def restore_light_setup():
-    # noprint("Restoring light setup...")
     # Set sun strength, background strength, and total light bounces back to their previous values
     sunlight.color.r = original_settings["sunlightR"]
     sunlight.color.g = original_settings["sunlightG"]
@@ -327,7 +310,6 @@ def restore_light_setup():
     
 # Restore compositor and render settings
 def restore_other_settings():
-    # noprint("Restoring compositor settings...")
     bpy.context.scene.view_settings.view_transform = original_settings["view_transform"]
     bpy.context.scene.render.resolution_percentage = original_settings["resolution_percentage"]
     bpy.context.scene.render.bake.margin = original_settings["bake_margin"]
@@ -335,7 +317,6 @@ def restore_other_settings():
 
 # Removes bakemap texture, its image node, and re-enables all normals
 def remove_bakemap():
-    # noprint("Removing bakemap and bakemap image nodes")
     bpy.data.images.remove(bpy.data.images["bakemap"])
     for material in bpy.data.materials:
         if material.name == "Dots Stroke":
@@ -362,7 +343,6 @@ for obj in selected_objects:
     rename_objects(obj)
     if skip_existing_files == True:
         if os.path.exists(path + obj.name + "_lightmap.png"):
-            # noprint(f"Lightmap texture already exists. Skipping...")
             restore_names(obj)
             select_first_uv_channel(obj)
             continue
@@ -400,7 +380,6 @@ for obj in selected_objects:
     rename_objects(obj)
     if skip_existing_files == True:
         if os.path.exists(path + obj.name + "_shadowmap.png"):
-            # noprint(f"Shadowmap texture already exists. Skipping...")
             restore_names(obj)
             select_first_uv_channel(obj)
             continue
