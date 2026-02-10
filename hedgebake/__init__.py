@@ -15,8 +15,8 @@ bl_info = {
     "name" : "HedgeBake",
     "author" : "cosagets", 
     "description" : "A Blender addon that bakes GI maps for Hedgehog Engine 1 games using Cycles.",
-    "blender" : (4, 5, 0),
-    "version" : (1, 0, 1),
+    "blender" : (5, 0, 0),
+    "version" : (1, 0, 2),
     "location" : "",
     "warning" : "",
     "doc_url": "", 
@@ -34,9 +34,9 @@ import os
 
 addon_keymaps = {}
 _icons = None
-class SNA_PT_DIRECTORIES_D7D3B(bpy.types.Panel):
+class SNA_PT_DIRECTORIES_248D2(bpy.types.Panel):
     bl_label = 'Directories'
-    bl_idname = 'SNA_PT_DIRECTORIES_D7D3B'
+    bl_idname = 'SNA_PT_DIRECTORIES_248D2'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_context = ''
@@ -64,8 +64,7 @@ class SNA_PT_DIRECTORIES_D7D3B(bpy.types.Panel):
         row_4559D.alignment = 'Expand'.upper()
         row_4559D.operator_context = "INVOKE_DEFAULT" if True else "EXEC_DEFAULT"
         row_4559D.label(text='Output Directory', icon_value=0)
-        op = row_4559D.operator('file.external_operation', text='Open Directory', icon_value=0, emboss=True, depress=False)
-        op.filepath = bpy.context.scene.sna_output_directory
+        op = row_4559D.operator('sna.open_folder_c0320', text='Open Directory', icon_value=0, emboss=True, depress=False)
         layout.prop(bpy.context.scene, 'sna_output_directory', text='', icon_value=0, emboss=True)
         row_DC03E = layout.row(heading='', align=False)
         row_DC03E.alert = False
@@ -82,9 +81,9 @@ class SNA_PT_DIRECTORIES_D7D3B(bpy.types.Panel):
         layout.prop(bpy.context.scene, 'sna_render_list_file', text='', icon_value=0, emboss=True)
 
 
-class SNA_PT_BAKE_OPTIONS_06FBA(bpy.types.Panel):
+class SNA_PT_BAKE_OPTIONS_9CF59(bpy.types.Panel):
     bl_label = 'Bake Options'
-    bl_idname = 'SNA_PT_BAKE_OPTIONS_06FBA'
+    bl_idname = 'SNA_PT_BAKE_OPTIONS_9CF59'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_context = ''
@@ -102,7 +101,7 @@ class SNA_PT_BAKE_OPTIONS_06FBA(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         layout.label(text='Resolution', icon_value=0)
-        layout.prop(bpy.context.scene, 'sna_resolution', text='', icon_value=196, emboss=True)
+        layout.prop(bpy.context.scene, 'sna_resolution', text='', icon_value=198, emboss=True)
         row_ABFD7 = layout.row(heading='', align=False)
         row_ABFD7.alert = False
         row_ABFD7.enabled = True
@@ -128,9 +127,9 @@ class SNA_PT_BAKE_OPTIONS_06FBA(bpy.types.Panel):
         row_CC62E.prop(bpy.context.scene, 'sna_skip_existing_files', text='Skip Existing Files', icon_value=0, emboss=True)
 
 
-class SNA_PT_BAKE_C73FF(bpy.types.Panel):
+class SNA_PT_BAKE_C35C2(bpy.types.Panel):
     bl_label = 'Bake'
-    bl_idname = 'SNA_PT_BAKE_C73FF'
+    bl_idname = 'SNA_PT_BAKE_C35C2'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_context = ''
@@ -147,7 +146,7 @@ class SNA_PT_BAKE_C73FF(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        op = layout.operator('sna.bake_44e3c', text='Bake', icon_value=190, emboss=True, depress=False)
+        op = layout.operator('sna.bake_44e3c', text='Bake', icon_value=141, emboss=True, depress=False)
 
 
 class SNA_OT_Bake_44E3C(bpy.types.Operator):
@@ -203,11 +202,6 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
                 pass
             else:
                 issues_found.append("Enable the 'Use Nodes' option in the compositor")
-        # Check what the current frame is
-
-        def check_current_frame():
-            if bpy.context.scene.frame_current != 1:
-                issues_found.append(f"Current frame number needs to be set to 1. It is currently {bpy.context.scene.frame_current}")
         # Check if there's a sun light in the scene
 
         def check_for_sunlight():
@@ -351,7 +345,6 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
         check_path()
         check_for_cycles()
         check_for_compositor_nodes()
-        check_current_frame()
         check_for_sunlight()
         check_light_linking()
         check_for_background_node()
@@ -378,7 +371,7 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
         if no_issues:
             background_node = bpy.data.worlds["World"].node_tree.nodes["Background"]
             background_color = bpy.context.scene.world.color
-            compositor = bpy.context.scene.node_tree
+            compositor = bpy.context.scene.compositing_node_group
             sunlight = bpy.data.lights["Sun"]
             temp_path = bpy.app.tempdir
             original_settings = {
@@ -418,7 +411,6 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
             # Disables all normals and sets metallic values to 0
 
             def create_bakemap(bake_resolution):
-                # noprint("Creating bakemap and bakemap image nodes...")
                 bakemap = bpy.data.images.new("bakemap", int(bake_resolution), int(bake_resolution))
                 for material in bpy.data.materials:
                     if material.name == "Dots Stroke":
@@ -437,7 +429,6 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
             # Set up and store compositor and render settings for denoising
 
             def change_other_settings():
-                # noprint("Changing other settings...")
                 bpy.context.scene.view_settings.view_transform = 'Standard'
                 bpy.context.scene.render.resolution_percentage = 1
                 bpy.context.scene.render.bake.margin = 512
@@ -445,14 +436,12 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
             # Creates temporary collection
 
             def create_temporary_collection():
-                # noprint("Creating temporary collection...\n")
                 global temporary_collection
                 temporary_collection = bpy.data.collections.new(name="TempCollection")
                 bpy.context.scene.collection.children.link(temporary_collection)
             # Selects the second UV Channel of the selected objects
 
             def select_second_uv_channel(obj):
-                # noprint("Selecting second uv channel...")
                 obj.data.uv_layers.active_index = 1
             # Renames objects to match name changes that happen when using Hedgehog Converter
 
@@ -467,14 +456,12 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
                         name_parts = new_name.split('@', 1)
                         new_name = name_parts[0]
                     original_names[new_name] = obj.name # Stores original name with new name as key
-                    # noprint(f"Renaming {original_name} to {new_name}")
                     obj.name = new_name
             # Moves object into temporary collection
             # With light linking, this will remove the direct sun light from bakes
             # while maintaining its indirect light contributions
 
             def move_to_temporary_collection(obj):
-                # noprint("Moving to temporary collection...")
                 temporary_collection.objects.link(obj)
                 currentCollection[0].objects.unlink(obj)
             # Bakes lightmaps using direct and indirect bake type and saves them
@@ -483,7 +470,6 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
                 bpy.ops.object.select_all(action='DESELECT')
                 obj.select_set(True)
                 bakemap.file_format = 'PNG'
-                # noprint("Baking lightmaps...")
                 bpy.ops.object.bake(type='DIFFUSE', pass_filter={'DIRECT','INDIRECT'})
                 if savefile == True:
                     bakemap.filepath_raw = path + obj.name + "_lightmap.png"
@@ -491,7 +477,6 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
             # Moves object back to its original collection
 
             def move_to_original_collection(obj):
-                # noprint("Moving to back to original collection...")
                 currentCollection[0].objects.link(obj)
                 temporary_collection.objects.unlink(obj)
             # Takes the square root of the image's RGB values and saves the image
@@ -499,12 +484,13 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
             # Saving the square root of the image's RGB values counteracts the darkening
 
             def sqrt_and_save(obj, current_map):
-                # noprint("Processing images and saving...")
                 image_node = compositor.nodes.new(type='CompositorNodeImage')
                 image_node.image = bpy.data.images.get("bakemap")
                 file_output_node = compositor.nodes.new('CompositorNodeOutputFile')
-                file_output_node.base_path = path
-                file_output_node.file_slots[0].path = obj.name + current_map
+                file_output_node.directory = path
+                file_output_node.format.media_type = 'IMAGE'
+                file_output_node.file_output_items.new(socket_type='RGBA', name="Image")
+                file_output_node.file_name = obj.name + current_map
                 separate_color_node = compositor.nodes.new(type='CompositorNodeSeparateColor')
                 math_nodeR = compositor.nodes.new(type='ShaderNodeMath')
                 math_nodeR.operation = 'SQRT'
@@ -522,27 +508,22 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
                 compositor.links.new(math_nodeB.outputs["Value"], combine_color_node.inputs["Blue"])
                 compositor.links.new(combine_color_node.outputs["Image"], file_output_node.inputs["Image"])
                 bpy.ops.render.render(write_still=True)
-            # Removes the .png0001 suffix placed on output files by default
+            # Removes the .pngImage suffix placed on output files by default
 
             def rename_saved_files(obj, current_map):
-                # Sets the current frame to 1 so the .png0001 suffix can be placed by Blender and replaced by the script
-                bpy.context.scene.frame_current = 1
-                old_filepath = os.path.join(path + obj.name + current_map + ".png0001.png")
-                filename = os.path.join(obj.name + current_map + ".png0001.png")
+                old_filepath = os.path.join(path + obj.name + current_map + ".pngImage.png")
+                filename = os.path.join(obj.name + current_map + ".pngImage.png")
                 if os.path.isfile(old_filepath): # Checks if it's a file and not a subdirectory
-                    new_filename = filename.replace(".png0001", "")
+                    new_filename = filename.replace(".pngImage", "")
                     new_filepath = os.path.join(path, new_filename)
                     try:
                         os.rename(old_filepath, new_filepath)
                     except FileExistsError:
-                        # noprint(f"{new_filename} already exists. Deleting...")
                         os.remove(new_filepath)
                         os.rename(old_filepath, new_filepath)
-                        # noprint(f"Renamed '{filename}' to '{new_filename}'")
             # Remove compositor nodes created by the script
 
             def remove_compositor_nodes():
-                # noprint("Removing compositor nodes...")
                 for node in compositor.nodes:
                     if node.type != 'R_LAYERS' and node.type != 'COMPOSITE' and node.type != 'REROUTE' and node.type != 'VIEWER':
                         compositor.nodes.remove(node)
@@ -550,12 +531,10 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
 
             def restore_names(obj):
                 if obj.name in original_names:
-                    # noprint(f"Renaming {obj.name} back to {original_names[obj.name]}")
                     obj.name = original_names[obj.name]
             # Selects the first uv channel
 
             def select_first_uv_channel(obj):
-                # noprint("Selecting first UV Channel...\n")
                 obj.data.uv_layers.active_index = 0
             # Gets a bake resolution from the render list file if available
             # If not, will use the default bake resolution
@@ -571,22 +550,21 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
                 for i in range(len(data_rows)):
                     if data_rows[i][1] == obj.name:
                         bake_resolution = data_rows[i][0]
-                        # noprint(f"Bake resolution for {obj.name} is {bake_resolution}")
                         return int(bake_resolution)
-                # noprint(f"{obj.name} not found in render list. Using default resolution of {default_resolution}")
                 return int(default_resolution)
             # Sets up the compositor nodes for denoising and saving the
             # square root of the image's RGB values
 
             def sqrt_denoise_and_save(obj, current_map):
-                # noprint("Processing images and saving...")
                 image_node = compositor.nodes.new(type='CompositorNodeImage')
                 image_node.image = bpy.data.images.get("bakemap")
                 file_output_node = compositor.nodes.new('CompositorNodeOutputFile')
-                file_output_node.base_path = path
-                file_output_node.file_slots[0].path = obj.name + current_map
+                file_output_node.directory = path
+                file_output_node.format.media_type = 'IMAGE'
+                file_output_node.file_output_items.new(socket_type='RGBA', name="Image")
+                file_output_node.file_name = obj.name + current_map
                 denoise_node = compositor.nodes.new(type='CompositorNodeDenoise')
-                denoise_node.use_hdr = False
+                denoise_node.inputs["HDR"].default_value = False
                 if current_map == "_shadowmap.png":
                     compositor.links.new(image_node.outputs["Image"], denoise_node.inputs["Image"])
                     compositor.links.new(denoise_node.outputs["Image"], file_output_node.inputs["Image"])
@@ -613,12 +591,10 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
             # Removes temporary collection.
 
             def remove_temporary_collection():
-                # noprint("Removing temporary collection...\n")
                 bpy.data.collections.remove(temporary_collection)
             # Set Sun strength to 12, and background strength, emission strength, and total scene light bounces to 0
 
             def change_light_setup():
-                # noprint("Changing light setup...\n")
                 sunlight.color = 1.0, 1.0, 1.0
                 sunlight.energy = 5
                 sunlight.exposure = 0
@@ -644,7 +620,6 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
                 bpy.ops.object.select_all(action='DESELECT')
                 obj.select_set(True)
                 bakemap.file_format = 'PNG'
-                # noprint("Baking shadowmaps...")
                 bpy.ops.object.bake(type='DIFFUSE', pass_filter={'DIRECT'})
                 if savefile == True:
                     bakemap.filepath_raw = path + obj.name + "_shadowmap.png"
@@ -652,7 +627,6 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
             # Restores original light setup
 
             def restore_light_setup():
-                # noprint("Restoring light setup...")
                 # Set sun strength, background strength, and total light bounces back to their previous values
                 sunlight.color.r = original_settings["sunlightR"]
                 sunlight.color.g = original_settings["sunlightG"]
@@ -675,7 +649,6 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
             # Restore compositor and render settings
 
             def restore_other_settings():
-                # noprint("Restoring compositor settings...")
                 bpy.context.scene.view_settings.view_transform = original_settings["view_transform"]
                 bpy.context.scene.render.resolution_percentage = original_settings["resolution_percentage"]
                 bpy.context.scene.render.bake.margin = original_settings["bake_margin"]
@@ -683,7 +656,6 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
             # Removes bakemap texture, its image node, and re-enables all normals
 
             def remove_bakemap():
-                # noprint("Removing bakemap and bakemap image nodes")
                 bpy.data.images.remove(bpy.data.images["bakemap"])
                 for material in bpy.data.materials:
                     if material.name == "Dots Stroke":
@@ -708,7 +680,6 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
                 rename_objects(obj)
                 if skip_existing_files == True:
                     if os.path.exists(path + obj.name + "_lightmap.png"):
-                        # noprint(f"Lightmap texture already exists. Skipping...")
                         restore_names(obj)
                         select_first_uv_channel(obj)
                         continue
@@ -744,7 +715,6 @@ class SNA_OT_Bake_44E3C(bpy.types.Operator):
                 rename_objects(obj)
                 if skip_existing_files == True:
                     if os.path.exists(path + obj.name + "_shadowmap.png"):
-                        # noprint(f"Shadowmap texture already exists. Skipping...")
                         restore_names(obj)
                         select_first_uv_channel(obj)
                         continue
@@ -810,6 +780,36 @@ class SNA_OT_Open_File_C5Afb(bpy.types.Operator):
         return self.execute(context)
 
 
+class SNA_OT_Open_Folder_C0320(bpy.types.Operator):
+    bl_idname = "sna.open_folder_c0320"
+    bl_label = "Open Folder"
+    bl_description = ""
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if bpy.app.version >= (3, 0, 0) and True:
+            cls.poll_message_set('')
+        return not False
+
+    def execute(self, context):
+        path = bpy.context.scene.sna_output_directory
+
+        def ShowMessageBox(title = "Error", icon = 'ERROR', message=""):
+
+            def draw(self, context):
+                self.layout.label(text=message)
+            bpy.context.window_manager.popup_menu(draw, title = title, icon = icon)
+        try:
+            os.startfile(path)
+        except Exception as e:
+            ShowMessageBox(message = "Could not open folder")
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return self.execute(context)
+
+
 def register():
     global _icons
     _icons = bpy.utils.previews.new()
@@ -820,11 +820,12 @@ def register():
     bpy.types.Scene.sna_denoised_directory = bpy.props.StringProperty(name='Denoised Directory', description='', default='', subtype='DIR_PATH', maxlen=0)
     bpy.types.Scene.sna_render_list_file = bpy.props.StringProperty(name='Render List File', description='', default='', subtype='FILE_PATH', maxlen=0)
     bpy.types.Scene.sna_skip_existing_files = bpy.props.BoolProperty(name='Skip Existing Files', description='', default=True)
-    bpy.utils.register_class(SNA_PT_DIRECTORIES_D7D3B)
-    bpy.utils.register_class(SNA_PT_BAKE_OPTIONS_06FBA)
-    bpy.utils.register_class(SNA_PT_BAKE_C73FF)
+    bpy.utils.register_class(SNA_PT_DIRECTORIES_248D2)
+    bpy.utils.register_class(SNA_PT_BAKE_OPTIONS_9CF59)
+    bpy.utils.register_class(SNA_PT_BAKE_C35C2)
     bpy.utils.register_class(SNA_OT_Bake_44E3C)
     bpy.utils.register_class(SNA_OT_Open_File_C5Afb)
+    bpy.utils.register_class(SNA_OT_Open_Folder_C0320)
 
 
 def unregister():
@@ -842,8 +843,9 @@ def unregister():
     del bpy.types.Scene.sna_denoise
     del bpy.types.Scene.sna_use_render_list
     del bpy.types.Scene.sna_resolution
-    bpy.utils.unregister_class(SNA_PT_DIRECTORIES_D7D3B)
-    bpy.utils.unregister_class(SNA_PT_BAKE_OPTIONS_06FBA)
-    bpy.utils.unregister_class(SNA_PT_BAKE_C73FF)
+    bpy.utils.unregister_class(SNA_PT_DIRECTORIES_248D2)
+    bpy.utils.unregister_class(SNA_PT_BAKE_OPTIONS_9CF59)
+    bpy.utils.unregister_class(SNA_PT_BAKE_C35C2)
     bpy.utils.unregister_class(SNA_OT_Bake_44E3C)
     bpy.utils.unregister_class(SNA_OT_Open_File_C5Afb)
+    bpy.utils.unregister_class(SNA_OT_Open_Folder_C0320)
